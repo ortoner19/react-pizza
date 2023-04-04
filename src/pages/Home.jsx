@@ -4,15 +4,19 @@ import Categories from "../components/Categories";
 import Sort from "../components/Sort";
 import PizzaBlock from "../components/PizzaBlock";
 import Skeleton from "../components/PizzaBlock/Skeleton";
+import ReactPaginate from 'react-paginate';
+import Pagination from '../components/Pagination';
+import { SearchContext } from '../App';
 // import pizzas from './assets/pizzas.json'
 // console.log(pizzas);
 
 const Home = () => {
-
+  const { searchValue } = React.useContext(SearchContext)
   const [items, setItems] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true)
 
   const [categoryId, setCategoryId] = React.useState(0);  // категорії це мясні, гриль і тд піцци. категорія 0 це усі піции со старту
+  const [currentPage, setcurrentPage] = React.useState(1);  // це пагінація, сторінкі
   const [sortType, setSortType] = React.useState({
     name: 'популярности',
     sortProperty: 'rating',
@@ -24,8 +28,9 @@ const Home = () => {
     const sortBy = sortType.sortProperty.replace('-', '');
     const order = sortType.sortProperty.includes('-') ? 'asc' :'desc';
     const category = categoryId > 0 ? `category=${categoryId}` : ''
+    const search = searchValue ? `&search=${searchValue}` : ''
 
-    fetch(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?${category}&sortBy=${sortBy}&order=${order}`,
+    fetch(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`,
     )
       .then((res) => {
         return res.json();
@@ -35,9 +40,17 @@ const Home = () => {
         setIsLoading(false);
       })
       window.scrollTo(0,0); // оце шоб уверху сторінка з'являлася
-  }, [categoryId, sortType])
+  }, [categoryId, sortType, searchValue, currentPage])
 
-
+  const pizzas = items
+  // .filter(obj => {  // це з фронта фільтр переробили на пошук в бекі, того це убрали
+  //   if (obj.title.toLowerCase().includes(searchValue.toLowerCase())) { // оце фільтр по тому шо вводим в інпуті
+  //     return true;
+  //   }
+  //   return false
+  // })
+  .map((obj) => <PizzaBlock key={obj.id} {...obj} />); // рендер піцц
+  const skeletons = [...new Array(6)].map((_, index) => <Skeleton key={index} />);
 
   return (
     <>
@@ -49,8 +62,8 @@ const Home = () => {
         <h2 className="content__title">Все пиццы</h2>
         <div className="content__items">
           {isLoading
-            ? [...new Array(6)].map((_, index) => <Skeleton key={index} />)
-            : items.map((obj) => <PizzaBlock key={obj.id} {...obj} />)}
+            ? skeletons
+            :pizzas }
 
           {/* //               items.map((obj) => isLoading ? <Skeleton /> : (
 //                 <PizzaBlock key={obj.id}
@@ -60,6 +73,7 @@ const Home = () => {
           {/* title={obj.title} price={obj.price} image={obj.imageUrl} sizes={obj.sizes} types={obj.types} */}
           {/* <PizzaBlock title="Мексиканская" price={500}/> */}
         </div>
+        <Pagination onChangePage = {number => setcurrentPage(number)} />
       </div>
     </>
   )
