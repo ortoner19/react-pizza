@@ -8,7 +8,6 @@ import ReactPaginate from 'react-paginate';
 import Pagination from '../components/Pagination';
 import { SearchContext } from '../App';
 // import pizzas from './assets/pizzas.json'
-// console.log(pizzas);
 
 const Home = () => {
   const { searchValue } = React.useContext(SearchContext)
