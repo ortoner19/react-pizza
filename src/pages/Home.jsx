@@ -1,6 +1,7 @@
 import React from 'react'
+import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux'
-import { setCategoryId  } from '../redux/slices/filterSlice';
+import { setCategoryId, setCurrentPage  } from '../redux/slices/filterSlice';
 import Categories from "../components/Categories";
 import Sort from "../components/Sort";
 import PizzaBlock from "../components/PizzaBlock";
@@ -11,7 +12,7 @@ import { SearchContext } from '../App';
 
 const Home = () => {
   const dispatch = useDispatch();
-  const { categoryId, sort } = useSelector((state) => state.filter);
+  const { categoryId, sort, currentPage } = useSelector((state) => state.filter);
 
   // const categoryId = useSelector(state => state.filter.categoryId);
   // const sortType = useSelector(state => state.filter.sort.sortProperty);
@@ -21,7 +22,7 @@ const Home = () => {
   const [isLoading, setIsLoading] = React.useState(true)
 
   // const [categoryId, setCategoryId] = React.useState(0);  // категорії це мясні, гриль і тд піцци. категорія 0 це усі піции со старту // убрали на 13ом урокі
-  const [currentPage, setcurrentPage] = React.useState(1);  // це пагінація, сторінкі
+
   // const [sortType, setSortType] = React.useState({
   //   name: 'популярности',
   //   sortProperty: 'rating',
@@ -32,6 +33,10 @@ const Home = () => {
     dispatch(setCategoryId(id))
   }
 
+  const onChangePage = number => {
+    dispatch(setCurrentPage(number))
+  }
+
   React.useEffect(() => {
     setIsLoading(true);   
 
@@ -40,17 +45,25 @@ const Home = () => {
     const category = categoryId > 0 ? `category=${categoryId}` : ''
     const search = searchValue ? `&search=${searchValue}` : ''
 
-    fetch(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`,
-    )
-      .then((res) => {
-        return res.json();
-      })
-      .then((arr) => {
-        setItems(arr);
-        setIsLoading(false);
-      })
-      window.scrollTo(0,0); // оце шоб уверху сторінка з'являлася
-  }, [categoryId, sort.sortProperty, searchValue, currentPage])
+    axios.get(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`)
+    .then((res) => {
+      // console.log(res); // в data наші піцци
+      setItems(res.data); // установили піци і ниже отключіли скєлєтон
+      setIsLoading(false);
+    });
+    window.scrollTo(0,0);
+      }, [categoryId, sort.sortProperty, searchValue, currentPage])
+  //   fetch(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`,
+  //   )
+  //     .then((res) => {
+  //       return res.json();
+  //     })
+  //     .then((arr) => {
+  //       setItems(arr);
+  //       setIsLoading(false);
+  //     })
+  //     window.scrollTo(0,0); // оце шоб уверху сторінка з'являлася
+  // }, [categoryId, sort.sortProperty, searchValue, currentPage])
 
   const pizzas = items
   // .filter(obj => {  // це з фронта фільтр переробили на пошук в бекі, того це убрали
@@ -84,7 +97,7 @@ const Home = () => {
           {/* title={obj.title} price={obj.price} image={obj.imageUrl} sizes={obj.sizes} types={obj.types} */}
           {/* <PizzaBlock title="Мексиканская" price={500}/> */}
         </div>
-        <Pagination onChangePage = {number => setcurrentPage(number)} />
+        <Pagination currentPage={currentPage} onChangePage = {onChangePage} />
       </div>
     </>
   )

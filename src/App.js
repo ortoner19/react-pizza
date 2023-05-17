@@ -9,7 +9,7 @@ import { Routes, Route } from "react-router-dom";
 export const SearchContext = React.createContext();
 
 function App() {
-  const [searchValue, setSearchValue] = React.useState();
+  const [searchValue, setSearchValue] = React.useState('');
 
   return (
     <div className="wrapper">

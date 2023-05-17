@@ -1,0 +1,156 @@
+В цьому уроці главне було це debounce, тіпа шоб ввод в інпуті виполнявся отложено, шоб ми не дедосили бек
+
+
+npm i axios ; в Home: import axios from 'axios';
+
+був фетч запит, стало через аксіос
+
+Було:
+    fetch(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`,
+    )
+      .then((res) => {
+        return res.json();
+      })
+      .then((arr) => {
+        setItems(arr);
+        setIsLoading(false);
+      })
+      window.scrollTo(0,0); // оце шоб уверху сторінка з'являлася
+  }, [categoryId, sort.sortProperty, searchValue, currentPage])
+
+Стало:
+
+    axios.get(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`)
+    .then((res) => {
+      // console.log(res); // в data наші піцци
+      setItems(res.data); // установили піци і ниже отключіли скєлєтон
+      setIsLoading(false);
+    });
+    window.scrollTo(0,0);
+      }, [categoryId, sort.sortProperty, searchValue, currentPage])
+
+
+=========
+Робим фокус по хрестику в інпуті через useRef в файлі Search
+
+Ref це референс, тобто ссилка.
+
+    const inputRef = React.useRef(); // сохранили ссилку, помістили її в інпут
+
+    const onClickClear = () => {
+        setSearchValue('');    // оце по хрестику очищає строку в інпуті
+        inputRef.current.focus(); // і після цього наводиться на інпут
+    }
+
+       
+            <input ref={inputRef} className={styles.input} value={value} onChange={onChangeInput} placeholder='Поиск пиццы...' />
+{value && (
+            <svg onClick={onClickClear} className={styles.clearIcon} height="14px" version="1.1" viewBox="0 0 14 14" width="14px" ><title /><desc /><defs /><g fill="none" fillRule="evenodd" id="Page-1" stroke="none" strokeWidth="1"><g fill="#000000" transform="translate(-341.000000, -89.000000)"><g transform="translate(341.000000, 89.000000)"><path d="M14,1.4 L12.6,0 L7,5.6 L1.4,0 L0,1.4 L5.6,7 L0,12.6 L1.4,14 L7,8.4 L12.6,14 L14,12.6 L8.4,7 L14,1.4 Z"  /></g></g></g></svg>
+        )}
+
+
+=========
+Робим шоб запит відправлявся після ввода з задержкой:
+
+npm i lodash.debounce ; в Searh : import debounce from 'lodash.debounce';
+
+Обьяснили тут шо таке хук useCallback , він для того, шоб функція не перерисовувалась при кожному зміні стейта. Тіпа ми ввели знак в інпуті - це вже все глобально перерисовується і
+функція перевизивається.. а якшо з useCallback , то вона визоветься один раз і всьо. В завісімостях в кінці як указуєм [] оце означає шо один раз создається.
+
+
+    const [value, setValue] = React.useState('');  // оцей стейт отвічає за швидкє відображення данних з інпута локально, а другій стейт із контєкста  setSearchValue(''); для того шоб робить поіск 
+
+
+    const updateSearchValue = React.useCallback(  
+        debounce((str) => {
+            setSearchValue(str);
+        }, 1000),
+        [],
+    )
+
+
+    const onChangeInput = event => {        // оце тут ми получаєм те шо вводим в інпуті, а вище в updateSearchValue матодом debounce робим так шо воно чекає покі ми введемо все секунду
+        setValue(event.target.value)
+        updateSearchValue(event.target.value);
+    }                                 
+
+
+    const onClickClear = () => {
+        setSearchValue('');
+        setValue('');             // 2 стейта тіпа локальний і в контєксті сказали.. 
+        inputRef.current.focus();
+    }
+
+
+вообще контєкст був в App ще раніше от   const [searchValue, setSearchValue] = React.useState('');
+
+
+
+===========
+Дальше пагінацію через рєдакс зробили
+
+Добавили новий слайс в слайсері
+
+const initialState = {
+  categoryId: 0,
+  currentPage: 1,    // оце стейт пагінації першої сторінкі
+  sort: {
+    name: "популярности",
+    sortProperty: "rating",
+  },
+};
+
+const filterSlice = createSlice({
+  name: "filters",
+  initialState,
+  reducers: {
+    setCategoryId(state, action) {
+      state.categoryId = action.payload;
+    },
+    setSort(state, action) {
+      state.sort = action.payload;
+    },
+    setCurrentPage(state, action) {
+      state.currentPage = action.payload;   // оцей слайс добавили
+    },
+  },
+});
+
+export const { setCategoryId, setSort, setCurrentPage } = filterSlice.actions;  // і отут експорт нового слайса setCurrentPage 
+
+
+
+ УБРАЛИ з Home: const [currentPage, setСurrentPage] = React.useState(1);  // це пагінація, сторінкі
+в Home  import { setCategoryId, setCurrentPage  } from '../redux/slices/filterSlice';  // витягнули слайс setCurrentPage  
+
+  const onChangePage = number => {
+    dispatch(setCurrentPage(number))
+  }
+
+
+        <Pagination currentPage={currentPage} onChangePage = {onChangePage} />
+
+також в Home витаскуєм currentPage 
+
+  const dispatch = useDispatch();
+  const { categoryId, sort, currentPage } = useSelector((state) => state.filter);  // filter це в store всі наші фільтри по катєгоріям, пагінації, вводу 
+
+
+в файлі Пагінації:
+
+
+ const Pagination = ({ currentPage, onChangePage }) => {
+  return (
+    <ReactPaginate
+    className={styles.root}
+    breakLabel="..."
+    nextLabel=">"
+    onPageChange={event => onChangePage(event.selected + 1)}
+    pageRangeDisplayed={4}  // 4 піцци
+    pageCount={3}          // 3 сторінки
+    forcePage={currentPage - 1}
+    previousLabel="<"
+    renderOnZeroPageCount={null}
+  />
+  )
+}
