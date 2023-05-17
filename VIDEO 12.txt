@@ -1,0 +1,90 @@
+Redux Toolkit тут був
+Зробили Приклад із каунтером (щотчіком)
+
+создали 2 файла
+store.js
+import { configureStore } from '@reduxjs/toolkit'
+import counterReducer from './slices/filterSlice'  // тут counterReducer  можна називать як завгодно, імпорт з наступного файлу
+
+export const store = configureStore ({           // отут ми в store записали редюсер і обгортаєм його в главному index.js 
+    reducer: { counter: counterReducer },       //  counterReducer = counterSlice , бо імпортіруєм ми його з нижнього файлу.. тіпа називать при імпорті ми можемо як угодно
+})
+
+// slicer в toolkit це як редюсер в обичному редаксі. Создаємо слайсер (редюсер)
+
+filterSlice.js
+
+import { createSlice } from '@reduxjs/toolkit'
+
+const initialState = {
+  count: 0,
+}
+
+export const counterSlice = createSlice({
+  name: 'counter',
+  initialState,
+  reducers: {
+    increment: (state) => {
+
+      state.count += 1
+    },
+    decrement: (state) => {
+      state.count -= 1
+    },
+    incrementByAmount: (state, action) => {
+      state.count += action.payload
+    },
+  },
+})
+
+
+export const { increment, decrement, incrementByAmount } = counterSlice.actions
+
+export default counterSlice.reducer
+
+
+В Аpp.js
+
+import { useSelector, useDispatch } from "react-redux";
+import { decrement, increment, imcrementByAmount } from "./redux/slices/filterSlice";
+
+const count = useSelector((state) => state.counter.count)   // оці дві останні строчкі найжважчі для мого розуміння... useSelector це тіпа Context і тіпа стейт. counter це назва стейтe, ми тіпа на назву ссилаємся і в ньому на  count
+// ми в count записуємо стейт, якій беремо саме з counter редюсера (де counter це назва і може бути змінена) і з цього каунтера нам нада count, якій там розписаний на інкрімєнт і дєкрімєнт
+ const dispatch = useDispatch()                            // а dispatch  це тіпа дія над тим стейтом в контєксті
+
+            <div>
+      <div>
+        <button
+          aria-label="Increment value"
+          onClick={() => dispatch(increment())}
+        >
+          Increment
+        </button>
+        <span>{count}</span>                 // оцей count був у слайсері (редюсері) прописаний: state.count += 1
+        <button
+          aria-label="Decrement value"  // aria-label нічого не значить важливого
+          onClick={() => dispatch(decrement())}
+        >
+          Decrement
+        </button>
+      </div>
+    </div>
+
+
+В index.js
+
+    <Provider store={store}>          // оцей store з першого файлу
+      <App />
+    </Provider>
+
+
+=============
+useSelector == useContext , відповідає за витаскування даних з храніліща
+useDispatch - хук, якій каже зроби шото
+
+
+
+
+
+// коміт 12го урока commit a66bcac1e5095d11d1fe58559499a454e6c76181
+git checkout commit_id - переключаюсь на вибраний коміт (після того як ознакомився з ними по git log)

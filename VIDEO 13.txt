@@ -1,0 +1,143 @@
+В цьому відєо ми робили фільтрацію і сортіровку з допомогою рєдакса.
+
+Создали файл filterSlice.js
+
+import { createSlice } from "@reduxjs/toolkit";
+
+const initialState = {                      // создали перше состояніє
+  categoryId: 0,      // оце тіпа перша категорія "всі", і діспатчом потом ми устанавлюєм нову категорію state.categoryId = action.payload.. через онклік в файлі категорій
+  sort: {
+    name: "популярности",
+    sortProperty: "rating",
+  },
+};
+
+const filterSlice = createSlice({       // више був стан, а це слайс
+  name: "filters",                     // в слайсі йде його назва, далі перший стан описаний више
+  initialState,
+  reducers: {                        // тут ідуть екшени, мєтоди або команди, які відповідають за сохранєніє сортіровкі і фільтрациї
+    setCategoryId(state, action) {  // функція буде визиваться в цьому файлі, отримає state состояніє, action це те шо змінює цей state
+      state.categoryId = action.payload;
+    },
+    setSort(state, action) {
+      state.sort = action.payload;
+    },
+  },
+});
+
+export const { setCategoryId, setSort } = filterSlice.actions;  // оце ми експортірували ці мєтоди фільтрациї і сортіровкі
+
+export default filterSlice.reducer;
+
+// ото як написало спочатку то нічо не змінювали в цьому файлі. Далі в файлі store.js витящіли файл со слайсом. Тут тоже нічо не змінювали
+
+// store це храніліще рєдаксов. Сюда помістили наш перший слайс filter
+
+import { configureStore } from '@reduxjs/toolkit'
+import filter from './slices/filterSlice'
+
+export const store = configureStore ({
+    reducer: { 
+        filter,  },
+})
+
+
+// після цього ми йдемо в компоненту Home.jsx. Варто зазначити, що в редакс ми обгорнули проект ще в минулому відосі в індекс.js
+// от     <Provider store={store}>  <App>       </Provider> 
+
+// в Home УБРАЛИ // const [categoryId, setCategoryId] = React.useState(0);  // категорії це мясні, гриль і тд піцци. категорія 0 це усі піции со старту // убрали на 13ом урокі
+// далі задача витащіть з рєдакса в Home categoryId
+
+import { useDispatch, useSelector } from 'react-redux'
+
+  const dispatch = useDispatch();
+  const { categoryId, sort } = useSelector((state) => state.filter); // з допомогою хука useSelector можемо витащіть стейт, тобто наше храніліще
+// запис useSelector((state) => state.filter) означає шо із стейта ми витаскуєм шото опрєдєльонне, тобто filter (а вобще у нас покашо один редюсер в файлі store)
+// і тіпа оцей useSelector ми сохранили в const categoryId (ну а далі sort то вже наступна логіка в другій половині відоса описувалась)
+Кстаті, строчка више одной строчка то скоротили ми.. до цього було отак двума строчками:
+  // const categoryId = useSelector(state => state.filter.categoryId);
+  // const sortType = useSelector(state => state.filter.sort.sortProperty);
+
+
+//Далі ми заміняли setCategoryId
+
+  const onChangeCategory = (id) => {
+    // console.log(id); // номер катєгорії получаю
+    dispatch(setCategoryId(id))                  // діспатч це як мікрофон, де ми прокрикуєм дєйствіє
+  }
+
+// ну і ниже в рєакті в цьому файлі Home ось передаєм
+<Categories value={categoryId} onChangeCategory={onChangeCategory}/> 
+
+// також в Home робим імпорт із слайса
+
+import { setCategoryId  } from '../redux/slices/filterSlice'; 
+
+// і далі оце шо ми імпортірували зі слайса setCategoryId   ми передаємо в діспатч в onChangeCategory више, шо я писав
+// оце воно вже робило.. просто логіка ще була тут описана деяка ще до цього як під рєдакс перероблювали.  В компоненті Categories.jsx ось шо було:
+
+import React from "react";
+
+function Categories ({value, onChangeCategory}){
+
+ categories = [
+    'Все',
+    'Мясные',
+    'Вегетерианская',
+    'Гриль',
+    'Острые',
+    'Закрытые'
+  ]
+    return (
+      <div className="categories">
+      <ul>
+        {categories.map((categoryName,i) => (
+          <li key={i} onClick={() => onChangeCategory(i)} className={value == i ? 'active' : ''}>{categoryName}</li>
+        ))}
+      </ul>
+    </div>
+    )
+  }
+  export default Categories;
+
+
+========
+Више було по смєні катєгорій (вєгєтеріанська, гриль і тд), зараз будемо писати за сортіровку (по популярності, цені і тд)
+
+В компоненті Home в рєакті ми лишаєм сам Sort без пропсов
+          <Sort  />
+
+Далі переходим в компоненту Sort, убіраєм з неї пропси
+import { useSelector, useDispatch } from 'react-redux';
+import { setSort } from '../redux/slices/filterSlice';
+
+function Sort() {
+  const dispatch = useDispatch();
+  const sort = useSelector(state => state.filter.sort);  // тіпа в sort записали отой слайс зі стейтом сорта (він описаний з самого верху, перший файл філтерслайс)
+
+...
+    // оце тут замінили value з пропсів на sort
+            <ul>
+              {
+                list.map((obj, i) => (
+                  <li key={i} onClick={() => onClickListItem(obj)} className={sort.sortProperty == obj.sortProperty ? 'active' : ''}>{obj.name}</li>
+                ))
+              }
+            </ul>
+
+
+
+// крім цього в компоненті Home замінили на sort
+
+    const sortBy = sort.sortProperty.replace('-', '');
+    const order = sort.sortProperty.includes('-') ? 'asc' :'desc';
+
+
+// далі в компоненті Sort
+
+  const onClickListItem = (obj) => {
+    dispatch(setSort(obj)); // оцей setSort  в першому файлі описується. Тіпа метод в слайсері
+    setOpen(false); // скрийся
+  }
+
+// і там де фетч запрос по юзЕфєкту там отакий вигляд в ітогі в кінці, там де залежність писалась: [categoryId, sort.sortProperty, searchValue, currentPage]

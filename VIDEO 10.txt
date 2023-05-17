@@ -1,0 +1,132 @@
+В 10ом відосі робили поіск і пагінацию.
+
+В папці Search був створили компонент Search, вінв вставлений в компонент Header
+В App стейт создали  const [searchValue, setSearchValue] = React.useState(''), ці пропси прокінули в Header, далі в Search, де їх витянули
+
+Далі стояла задача зробить контроліруємий інпут.
+            <svg className={styles.icon} enableBackground="new 0 0 50 50" height="50px" id="Layer_1" version="1.1" viewBox="0 0 50 50" width="50px" xmlns="http://www.w3.org/2000/svg"><rect fill="none" height="50" width="50" /><circle cx="21" cy="20" fill="none" r="16" stroke="#000000" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="2" /><line fill="none" stroke="#000000" strokeMiterlimit="10" strokeWidth="4" x1="32.229" x2="45.5" y1="32.229" y2="45.5" /></svg>
+            <input className={styles.input} value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder='Поиск пиццы...' />
+{searchValue && (
+            <svg onClick={() => setSearchValue('')} className={styles.clearIcon} height="14px" version="1.1" viewBox="0 0 14 14" width="14px" ><title /><desc /><defs /><g fill="none" fillRule="evenodd" id="Page-1" stroke="none" strokeWidth="1"><g fill="#000000" transform="translate(-341.000000, -89.000000)"><g transform="translate(341.000000, 89.000000)"><path d="M14,1.4 L12.6,0 L7,5.6 L1.4,0 L0,1.4 L5.6,7 L0,12.6 L1.4,14 L7,8.4 L12.6,14 L14,12.6 L8.4,7 L14,1.4 Z"  /></g></g></g></svg>
+        )}
+// тут контрольованим зробила строчка onChange={(event) => setSearchValue(event.target.value)} І ДАЛІ УСТАНАВЛЮЄМ value={searchValue}
+// а очіщає по хрестику там остання строчка, тіпа устанавлює інпут пустой строкой
+// хрестик появляється тількі якшо в інпуті шото введено, це от: {searchValue && ( ну і остання строчка
+
+
+Далі в компоненті Home сохранили переменні піцца і скелетон в константи:
+ const pizzas = items
+  .map((obj) => <PizzaBlock key={obj.id} {...obj} />); // рендер піцц
+ const skeletons = [...new Array(6)].map((_, index) => <Skeleton key={index} />);
+
+По піццам міг буть пошук в інпуті на фронті, но його убрали. Перенесли на бек.
+  // .filter(obj => {  // це з фронта фільтр переробили на пошук в бекі, того це убрали
+  //   if (obj.title.toLowerCase().includes(searchValue.toLowerCase())) { // оце фільтр по тому шо вводим в інпуті
+  //     return true;
+  //   }
+  //   return false
+  // })   // і дальше ми мапили піцци. Тіпа якшо є те шо ми вводим, то ми мапим
+
+
+ДАЛІ. Ми добавили залежність useEffect від того, що ми вводим (внизу searchValue), 
+далі добавили     const search = searchValue ? `&search=${searchValue}` : '' і впихнули ${search} в кінці фетч запроса. Тіпа до ссилкі докручується те шо ми вводим в інпуті
+
+    fetch(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`,
+    )
+      .then((res) => {
+        return res.json();
+      })
+      .then((arr) => {
+        setItems(arr);
+        setIsLoading(false);
+      })
+      window.scrollTo(0,0); // оце шоб уверху сторінка з'являлася
+  }, [categoryId, sortType, searchValue, currentPage])
+
+
+ДАЛІ создавали пагінацию. Создали папку Pagination
+npm i react-paginate  - автор юзав це вперше, як я поняв, шо різні варіанти є
+
+КОМПОНЄНТ ПАГІНАЦІЇ вийшов такім:
+ const Pagination = ({ onChangePage }) => {
+  return (
+    <ReactPaginate
+    className={styles.root}
+    breakLabel="..."
+    nextLabel=">"
+    onPageChange={event => onChangePage(event.selected + 1)}
+    pageRangeDisplayed={4} // 4 піцци
+    pageCount={3}          // 3 сторінки
+    previousLabel="<"
+    renderOnZeroPageCount={null}
+  />
+  )
+}
+
+export default Pagination;
+
+.root {
+  li {
+    display: inline-block;
+    a {
+      display: inline-block;
+      text-align: center;
+      width: 45px;
+      height: 45px;
+      padding: 10px;
+      line-height: 24px;
+      border: 1px solid #fe5f1e;
+      border-radius: 30px;
+      margin-right: 10px;
+      cursor: pointer;
+      transition: 0.5s ease;
+      &:hover {
+        background-color: #fe5f1e;
+        color: #fff;
+      }
+    }
+  }
+  :global {
+    .selected {
+      a {
+        background-color: #fe5f1e;
+        color: #fff;
+      }
+    }
+  }
+}
+
+
+В кінці добавили стейт на сторінку,currentPage прикрутили теж до юзефєкта. В фетчі добавили таке page=${currentPage}
+  const [currentPage, setcurrentPage] = React.useState(1); 
+
+Прикрутили в компонент         <Pagination onChangePage = {number => setcurrentPage(number)} />
+
+
+
+===========
+Video11 тут создавали вперше Контєкст, замість пропсов
+
+
+в App у нас був стейт ще перед відео  const [searchValue, setSearchValue] = React.useState() , якій ми пропсами прокідували униз
+Тепер ми создали контєкст такім чином: export const SearchContext = React.createContext()
+І весь App обгорнули в контєкст такім чином (обгортаєм своєй названой пєрємєнной+.Провайдер):
+  return (
+      <div className="wrapper">
+      <SearchContext.Provider value={{searchValue, setSearchValue}}>   // оце контєкст
+        <Header />
+        <div className="content">
+            <Routes>
+              <Route path="/" element={<Home  />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+        </div>
+        </SearchContext.Provider>
+      </div>
+  );
+
+ОБГОРНУЛИ і далі в компонентах де треба витягуєм. От в Home зробили імпорт
+import { SearchContext } from '../App';
+І ось   const { searchValue } = React.useContext(SearchContext) // тіпа витягнули searchValue  з общой пєрємєнной контєкста SearchContext
+В компоненті Search теж витягнули     const { searchValue, setSearchValue } = React.useContext(SearchContext)

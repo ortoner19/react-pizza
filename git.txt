@@ -1,0 +1,9 @@
+upd.
+По збереженню комітів.
+git log - бачиш всі свої коміти
+git add .  - добавляю зміни
+git commit -m “comment” - зберігаю коміт
+git checkout commit_id - переключаюсь на вибраний коміт (після того як ознакомився з ними по git log)
+приклад:
+git checkout 6073947e6f53dce15352b5704eccd743929854a6 старий 9.21
+git checkout a66bcac1e5095d11d1fe58559499a454e6c76181 акт 11
