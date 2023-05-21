@@ -1,0 +1,128 @@
+В цьому відео треба було задані фільтри вшивать в ссилку
+npm i qs; в Home: import qs from 'qs';
+import { useNavigate } from 'react-router-dom';
+...
+const Home = () => {
+  const navigate = useNavigate();   // оцей запис добавили, шоб наглядно було написав
+  const dispatch = useDispatch();  // navigate  відповідає за те шоб вшило в ссилку
+...
+
+  // Если изменили параметры и был первый рендер, то делаем это действие
+  React.useEffect(() =>{
+    if (isMounted.current) {   // якщо був перший рендер. isMounted в кінці добавляли, це для того, шоб вшивали на другій умовно і далі рендер, а не спочатку шото в ссилку
+      const queryString = qs.stringify({   //stringify превращає обьєкт в строчку
+        sortProperty: sort.sortProperty,    // саме оця функкія відповідає за вигляд адрєсной строкі, робимо за допомогою qs
+        categoryId,                   // і в функції наші три фільтри: катєгорії, сортіровка і сторінкі
+        currentPage,
+      })
+      navigate(`?${queryString}`)   // вшиваєм в ссилку через navigate const queryString ; після http://localhost:3000/ буде знак питання, потом queryString
+      // console.log(queryString); // вернуло sortProperty=rating&categoryId=0&currentPage=1
+    }
+    isMounted.current = true;
+  }, [categoryId, sort.sortProperty, currentPage])    // залежності, тіпа змінюється строка, коли в цих фільтрах дані змінилися
+
+
+
+Далі
+
+  //Если был первый рендер, то проверяем URL-параметры и сохраняемся редаксе
+  React.useEffect(() => {
+    if (window.location.search) {  // якщо в ссилці шото є, то ми будем парсить із наших парамєтров і перетворювати в об'єкт
+      const params = qs.parse(window.location.search.substring(1));  // тіпа сохраняєм те шо в ссилці, крім першого "?" і передаєм ниже в рєдакс
+      // console.log(params);  // отримуєм обьєкт з даними по трьох фільтрах
+      
+      const sort = list.find(obj => obj.sortProperty == params.sortProperty )  // витягнули list з файла Sort. Нам треба пробігтися find по кожному свойству
+	// і знайти в об'єкті obj.sortProperty то шо є в params.sortProperty
+
+      dispatch(
+        setFilters({   // оцей setFilters витягнули з рєдакса, ниже я написав. там создали новий слайс 
+          ...params,
+          sort,    // цей сорт з того шо више const 
+        })
+      )
+      isSearch.current = true;
+    }
+  },[]) // при першому рендері тіпа
+
+Далі в файлі filterSlice добавляєм ще один слайс
+
+const initialState = {
+  categoryId: 0,
+  currentPage: 1,
+  sort: {
+    name: "популярности",
+    sortProperty: "rating",
+  },
+};
+
+const filterSlice = createSlice({
+  name: "filters",
+  initialState,
+  reducers: {
+    setCategoryId(state, action) {
+      state.categoryId = action.payload;
+    },
+    setSort(state, action) {
+      state.sort = action.payload;
+    },
+    setCurrentPage(state, action) {
+      state.currentPage = action.payload;
+    },
+    setFilters(state, action) {            // оцей слайс добавили
+      state.sort = action.payload.sort;  // оцей сорт це як стейт.. више в цьому файлі
+      state.currentPage = Number(action.payload.currentPage);
+      state.categoryId = Number(action.payload.categoryId);
+    },
+  },
+});
+
+export const { setCategoryId, setSort, setCurrentPage, setFilters } = filterSlice.actions;
+
+
+В Home витащіли import { setCategoryId, setCurrentPage, setFilters  } from '../redux/slices/filterSlice';
+
+
+В файлі Sort давно було, оцей ліст витягнули в Home
+export const list = [
+  {name: 'популярности (DESC)', sortProperty: 'rating'}, 
+  {name: 'популярности (ASC)', sortProperty: '-rating'}, 
+  {name: 'цене (DESC)', sortProperty: 'price'}, 
+  {name: 'цене (ASC)', sortProperty: '-price'}, 
+  {name: 'алфавиту (DESC)', sortProperty: 'title'},
+  {name: 'алфавиту (ASC)', sortProperty: '-title'}
+];
+
+
+// 12 хв урока, тут можна було б завершить, але далі ми ісправляли одну помилку, де робилося 2 запита, замість одного
+
+  const isSearch = React.useRef(false); // добавили в Home під navigate і dispatch.(false) тіпа поіска пока нема в началі. В другому юзЕфєкті тру, тіпа робим по фільтрам
+  const isMounted = React.useRef(false);
+
+  const fetchPizzas = () => {  // це наші піцци, які підтягуються з axios, вони були в юзЕфєкті до цього урока, ми їх записали тут в функцію; запис уверху над юзЕфєктами...
+    setIsLoading(true);   
+
+    const sortBy = sort.sortProperty.replace('-', '');
+    const order = sort.sortProperty.includes('-') ? 'asc' :'desc';
+    const category = categoryId > 0 ? `category=${categoryId}` : ''
+    const search = searchValue ? `&search=${searchValue}` : ''
+
+    axios.get(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`)
+    .then((res) => {
+      // console.log(res); // в data наші піцци
+      setItems(res.data); // установили піци і ниже отключіли скєлєтон
+      setIsLoading(false);
+    });
+  }
+
+
+  // Если был первый рендер, то запрашиваем пиццы 
+  React.useEffect(() => {  // оце наш третій з трьох ЮзЕфєктов. Ідея в тому шоб ця частина чекали покі в другому юзЕфєкті сработав діспатч
+    window.scrollTo(0,0);
+
+    if(!isSearch.current) {  // якщо пошуку немає, то вигружаєм піци 
+      fetchPizzas();
+    }
+      isSearch.current = false;
+      }, [categoryId, sort.sortProperty, searchValue, currentPage])
+
+
