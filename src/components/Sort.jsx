@@ -14,6 +14,7 @@ export const list = [
 function Sort() {
   const dispatch = useDispatch();
   const sort = useSelector(state => state.filter.sort);
+  const sortRef = React.useRef();
 
   const [open, setOpen] = React.useState(false);
 
@@ -25,8 +26,22 @@ function Sort() {
     setOpen(false); // скрийся
   }
 
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+        if(!sortRef.current.contains(event.target)) {
+          setOpen(false)
+        }
+    }
+    document.body.addEventListener('click', handleClickOutside);
+
+    return () => document.body.removeEventListener('click', handleClickOutside);  // якщо на другу сторінку перейшли, то обработчік собитій удаляєм
+
+  }, [])
+
+
+
   return (
-    <div className="sort"> 
+    <div ref={sortRef} className="sort"> 
       <div className="sort__label">
         <svg
           width="10"
