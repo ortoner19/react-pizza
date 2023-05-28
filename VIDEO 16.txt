@@ -1,0 +1,258 @@
+
+На початку создали логіку скритія попап окна, при кліку внє попап окна в Sort
+
+  const sortRef = React.useRef();
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+        if(!sortRef.current.contains(event.target)) {  // тіпа якщо клік не по ці зоні то setOpen(false)
+          setOpen(false)
+        }
+    }
+    document.body.addEventListener('click', handleClickOutside);
+
+    return () => document.body.removeEventListener('click', handleClickOutside);  // якщо на другу сторінку перейшли, то обработчік собитій удаляєм
+		// тіпа коли буде умірать компонєнт.. анмаунт визивається.
+  }, [])
+
+<div ref={sortRef} className="sort"> 
+
+
+По відосу робили через path, але це застаріла інфа.
+
+======
+Создали новий файл слайса cartSlice.js
+
+import { createSlice } from "@reduxjs/toolkit";
+
+const initialState = {
+  totalPrice: 0,    //корзіна цена сумарна
+  items: [],     // корзіна масів вибраних товаров у корзіну
+};
+
+
+const cartSlice = createSlice({
+  name: "cart",   //назва редюсера
+  initialState,  // стейт, више написаний
+  reducers: {   // перелік редюсерів
+
+    addItem(state, action) {
+      const findItem = state.items.find((obj) => obj.id == action.payload.id);
+
+      if (findItem) {
+        findItem.count++;    // щотчік покупок збільшуєм. Якщо повторно: +1 до щотчіка, else  другій товар в масів добавляється
+      } else {
+        state.items.push({
+          ...action.payload,
+          count: 1,
+        });
+      }
+      state.totalPrice = state.items.reduce((sum, obj) => {  //загальна ціна покупок. reduce це сума чисел
+        return obj.price * obj.count + sum;
+      }, 0);   // 0 це ізначальна сума чисел
+    },
+   
+    minusItem(state, action) {                                            // в компоненті CartItem юзається
+      const findItem = state.items.find((obj) => obj.id == action.payload); 
+      if (findItem) {
+        findItem.count --;
+      }
+    },
+
+    removeItem(state, action) {
+      state.items = state.items.filter((obj) => obj.id != action.payload);  // це удалить обьєкта із масіва по кліку (в корзині)
+    },
+
+    clearItems(state) {   // це кнопка удалить всі обьєкти з масіва і виставить 0 в корзіні
+      state.items = [];
+      state.totalPrice = 0;
+    },
+
+
+
+В компоненті store.js добавили новий слайс
+
+export const store = configureStore({
+  reducer: {
+    filter,
+    cart,  // оце добавили
+  },
+});
+
+
+
+В компоненті Header
+
+import { useSelector } from 'react-redux';
+
+
+  const { items, totalPrice } = useSelector(state => state.cart);
+  const totalCount = items.reduce((sum, item) => sum + item.count, 0);   // це по кліку кількість товарів добавляє
+ 
+передали             <span>{totalPrice} ₽</span> і             <span>{totalCount}</span>  // це воно корзіну показує
+
+
+
+В компоненті PizzaBlock
+
+
+import { useDispatch, useSelector } from "react-redux";
+import { addItem } from '../../redux/slices/cartSlice';
+
+
+function PizzaBlock({id, title, price, imageUrl, sizes, types}) {  // тут ми ще раньше отримували дані по товару, це уверху
+
+  const dispatch = useDispatch();
+  const cartItem = useSelector((state) => state.cart.items.find((obj) => obj.id == id))  // cart це назва редюсера, id це піцци
+
+ const addedCount = cartItem ? cartItem.count : 0;
+
+  const inClickAdd = () => {   // по кліку добавляєм в корзіну 
+    const item = {
+      id,
+      title,
+      price,
+      imageUrl,
+      type: typeNames[activeType],  // це тіп і розмір піцци
+      size: sizes[activeSize],
+    }
+    dispatch(addItem(item))   // item це назва нашої конст, по діспатчу ми закідуєм це в addItem , який описується в слайсері
+  }
+
+
+
+<button onClick={inClickAdd}  className="button button--outline button--add">
+            {addedCount > 0 && <i>{addedCount}</i>}   // це щотчік на главной сторінці на кнопці добавить
+
+
+
+Перед цим була главна сторінка, тепер корзіна, компонента Cart
+
+import { useDispatch, useSelector } from "react-redux";
+
+    const dispatch = useDispatch();
+    const { totalPrice, items } = useSelector((state) => state.cart)  // items  це всі піцци із редюсера
+
+
+    const totalCount = items.reduce((sum, item) => sum + item.count, 0);
+
+
+    const onclickClear = () => {
+        if(window.confirm('Очистить корзину?')) {    // з корзіни все удаляє, береться з діспатча функція clearItems
+            dispatch(clearItems())
+        }
+    }
+
+    if (!totalPrice) {     // перед рендером компоненти Cart перевіряється чи туди шото добавили, якшо ні то компонента <CartEmpty />
+        return <CartEmpty />
+     }
+
+
+тут переписали html
+                    {
+                        items.map((item) => <CartItem key={item.id} {...item} />
+                        )}
+
+                        <span> Всего пицц: <b>{totalCount} шт.</b> </span>
+                        <span> Сумма заказа: <b>{totalPrice} ₽</b> </span> 
+
+
+Создали компонєнт CartItem, його увесь скопіював:
+
+import { useDispatch } from 'react-redux';
+import { addItem, minusItem, removeItem } from '../redux/slices/cartSlice';
+
+const CartItem = ({ id, title, price, size, type, count, imageUrl }) => {
+    const dispatch = useDispatch();
+
+    const onClickPlus = () => {   // оце з діспатча винімається addItem, minusItem і тд
+        dispatch(
+            addItem({
+                id,
+            }),
+        )
+    }
+    const onClickMinus = () => {
+        dispatch(
+            minusItem(id)
+        )
+    }
+    const onClickRemove = () => {
+        if (window.confirm('Вы уверены, что хотите удалить?')) {    // удалить піццу з корзіни
+            dispatch(removeItem(id))
+        }
+    }
+
+    return (
+        <div className="cart__item">
+            <div className="cart__item-img">
+                <img
+                    className="pizza-block__image"
+                    src={imageUrl}
+                    alt="Pizza /"
+                />
+            </div>
+            <div className="cart__item-info">
+                <h3>{title}</h3>
+                <p>{type}, {size} см.</p>
+            </div>
+            <div className="cart__item-count">
+                <div onClick={onClickMinus} className="button button--outline button--circle cart__item-count-minus">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.92001 3.84V5.76V8.64C5.92001 9.17016 5.49017 9.6 4.96001 9.6C4.42985 9.6 4.00001 9.17016 4.00001 8.64L4 5.76L4.00001 3.84V0.96C4.00001 0.42984 4.42985 0 4.96001 0C5.49017 0 5.92001 0.42984 5.92001 0.96V3.84Z" fill="#EB5A1E" />
+                        <path d="M5.75998 5.92001L3.83998 5.92001L0.959977 5.92001C0.429817 5.92001 -2.29533e-05 5.49017 -2.29301e-05 4.96001C-2.2907e-05 4.42985 0.429817 4.00001 0.959977 4.00001L3.83998 4L5.75998 4.00001L8.63998 4.00001C9.17014 4.00001 9.59998 4.42985 9.59998 4.96001C9.59998 5.49017 9.17014 5.92001 8.63998 5.92001L5.75998 5.92001Z" fill="#EB5A1E" />
+                    </svg>
+
+                </div>
+                <b>{count}</b>
+                <div onClick={onClickPlus} className="button button--outline button--circle cart__item-count-plus">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.92001 3.84V5.76V8.64C5.92001 9.17016 5.49017 9.6 4.96001 9.6C4.42985 9.6 4.00001 9.17016 4.00001 8.64L4 5.76L4.00001 3.84V0.96C4.00001 0.42984 4.42985 0 4.96001 0C5.49017 0 5.92001 0.42984 5.92001 0.96V3.84Z" fill="#EB5A1E" />
+                        <path d="M5.75998 5.92001L3.83998 5.92001L0.959977 5.92001C0.429817 5.92001 -2.29533e-05 5.49017 -2.29301e-05 4.96001C-2.2907e-05 4.42985 0.429817 4.00001 0.959977 4.00001L3.83998 4L5.75998 4.00001L8.63998 4.00001C9.17014 4.00001 9.59998 4.42985 9.59998 4.96001C9.59998 5.49017 9.17014 5.92001 8.63998 5.92001L5.75998 5.92001Z" fill="#EB5A1E" />
+                    </svg>
+
+                </div>
+            </div>
+            <div className="cart__item-price">
+                <b>{price * count} ₽</b>
+            </div>
+            <div className="cart__item-remove">
+                <div onClick={onClickRemove} className="button button--outline button--circle">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.92001 3.84V5.76V8.64C5.92001 9.17016 5.49017 9.6 4.96001 9.6C4.42985 9.6 4.00001 9.17016 4.00001 8.64L4 5.76L4.00001 3.84V0.96C4.00001 0.42984 4.42985 0 4.96001 0C5.49017 0 5.92001 0.42984 5.92001 0.96V3.84Z" fill="#EB5A1E" />
+                        <path d="M5.75998 5.92001L3.83998 5.92001L0.959977 5.92001C0.429817 5.92001 -2.29533e-05 5.49017 -2.29301e-05 4.96001C-2.2907e-05 4.42985 0.429817 4.00001 0.959977 4.00001L3.83998 4L5.75998 4.00001L8.63998 4.00001C9.17014 4.00001 9.59998 4.42985 9.59998 4.96001C9.59998 5.49017 9.17014 5.92001 8.63998 5.92001L5.75998 5.92001Z" fill="#EB5A1E" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+export default CartItem;
+
+
+
+Також создали коментенту пустої корзини CartEmpty
+
+
+import { Link } from 'react-router-dom';
+
+import cartEmptyImg from '../empty-cart.png'
+
+const CartEmpty = () => {
+    return (
+        <>
+            <div className='cart cart-empty'>
+                <h2>Корзина пустая <span>😕</span></h2>
+                <p>Вероятней всего, вы не заказывали еще пиццу. <br />
+                    Для того, чтобы заказать пиццу, перезайти на главную страницу.
+                </p>
+                <img src={cartEmptyImg} alt="Empty cart" />
+                <Link to="/" className="button button--black">
+                    <span>Вернуться назад</span>
+                </Link>
+            </div>
+        </>
+    )
+}
+export default CartEmpty;

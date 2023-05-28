@@ -126,3 +126,6 @@ export const list = [
       }, [categoryId, sort.sortProperty, searchValue, currentPage])
 
 
+
+// 15 урок
+commit ee5a4b42382d8f5f0cb5a9cdd7c2b8d512eec366
