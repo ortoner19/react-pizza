@@ -1,0 +1,133 @@
+В цьому відео до фетч запита з аксіосом ще добавили async await
+Автор розказував шо консоль логі і алєрти виполняються сінхронно, один після одного, а аксіос чі фетч (а аксіос і робить через фетч), робить АСІНХРОННИЙ запит.
+Тобто спочатку виповнилися б консоль логі, далі алєрти, а фетч в будь-якій момент, наприклад.
+Родітєльська функція async має бути. async  може бути декілька, в середині головної функції, наприклад.
+Спочатку в відосі автор показав як замість then ми тепер юзаєм await один раз.
+
+const getPizzas = async () => {
+
+    const sortBy = sort.sortProperty.replace('-', '');
+    const order = sort.sortProperty.includes('-') ? 'asc' : 'desc';
+    const category = categoryId > 0 ? `category=${categoryId}` : ''
+    const search = searchValue ? `&search=${searchValue}` : ''
+
+
+// тут був axios запит, його перенесли в слайс, там await вішається на fetchPizzas
+
+dispatch(fetchPizzas({
+      sortBy,  // воно написано перед цим
+      order,
+      category,
+      search,
+      currentPage,
+    }),
+    );
+
+    window.scrollTo(0, 0);
+  }
+
+==
+Ще розглядали Трай Кетч, потім убрали
+
+    // try {  // питайся робить це, якщо не вийде то кетч, а finally  в будь-якому випадку
+    // const {data} = await axios.get(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`);
+
+    // } catch (error) {
+    //   // setIsLoading(false);
+    //   alert('Ошибка при получении пицц')
+    // } 
+    // finally {
+    //   setIsLoading(false);
+    // }
+==
+
+Создали новий слайс, файл pizzaSlice.js
+
+import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+
+Оце ниже создай асінхронний екшен, коли він виповниться верни мені отвєт і оце дєйствіє ми передали в extraReducers ниже.
+В extraReducers  обрабатується не логіка, а асінхронні екшени. Також extraReducers   замінили try catch в Home
+export const fetchPizzas = createAsyncThunk(   // fetchPizzas  було в Home, перенесли сюди
+  'pizza/fetchPizzasStatus',                   // createAsyncThunk бере префікс. pizza це назва зі стейту ниже
+  async (params) => {
+    const { sortBy, order, category, search, currentPage } = params;  // витащіли з Home
+    const {data} = await axios.get(`https://c63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`);
+    return data;
+  }
+)
+
+// сетСтейт з Home isLoading убрали, і тепер тут ця логіка включається
+const initialState = {
+  items: [],
+  status: 'loading', // loading | success | error   // оцей статус ниже через екстраредюсери міняється, ізначально загрузка.. тіпа скєлєтон
+};
+
+const pizzaSlice = createSlice({
+  name: "pizza",
+  initialState,
+  reducers: {
+    setItems(state, action) {
+            state.items = action.payload;
+        },
+      },
+      extraReducers: {
+        [fetchPizzas.pending] : (state) => {
+          // console.log('Идет отправка');
+          state.status = 'loading';
+          state.items = [];
+        },
+        [fetchPizzas.fulfilled] : (state, action) => {
+          // console.log(state, 'Все ОК');          // fulfilled це якщо успышно виконається, то роби щось
+          state.items = action.payload;
+          state.status = 'success';
+        },
+        [fetchPizzas.rejected] : (state, action) => {
+          // console.log('Была ошибка');          // тіпа якщо була ошибка то пустий масів
+          state.status = 'error';
+          state.items = [];
+        },
+      }
+    })
+
+
+export const { setItems } = pizzaSlice.actions;
+
+export default pizzaSlice.reducer;
+
+
+Добавили в store новий редюсер
+
+import { configureStore } from "@reduxjs/toolkit";
+import filter from "./slices/filterSlice";
+import cart from "./slices/cartSlice";
+import pizza from "./slices/pizzaSlice";
+
+export const store = configureStore({
+  reducer: {
+    filter,
+    cart,
+    pizza,
+  },
+});
+
+
+В Home.jsx
+import { fetchPizzas } from '../redux/slices/pizzaSlice';
+
+  const { items, status } = useSelector((state) => state.pizza)
+убрали тут локальні стейти, бо воно в рєдаксі тепер
+  // const [items, setItems] = React.useState([]);
+  // const [isLoading, setIsLoading] = React.useState(true)
+
+
+        {
+          status == 'error' ? (<div className='content__error-info'>
+            <h2>Произошла ошибка <span>😕</span></h2>
+            <p>Не удалось получить пиццы, к сожалению <br />
+              Для того, чтобы заказать пиццу, перезайти на главную страницу.
+            </p>
+          </div>) : (<div className="content__items"> {status == 'loading'
+            ? skeletons
+            : pizzas} </div>
+          )}
