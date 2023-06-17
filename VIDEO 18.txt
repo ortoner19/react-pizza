@@ -1,0 +1,84 @@
+в pizzaSlice.js добавили
+
+export const selectPizzaData = (state) => state.pizza  // pizza це назва слайса в стейті
+
+
+в Header.jsx
+
+було
+  // const { items, totalPrice } = useSelector(state => state.cart);
+стало
+const { items, totalPrice } = useSelector(selectCart);  
+
+
+в filterSlice.js
+
+const initialState = {
+  searchValue: '',  // добавили
+  categoryId: 0,
+  currentPage: 1,
+  sort: {
+    name: "популярности",
+    sortProperty: "rating",
+  },
+};
+
+    setSearchValue(state, action) {      // в слайсері добавили
+      state.searchValue = action.payload;
+    },
+
+
+export const selectFilter = (state) => state.filter;
+export const selectSort = (state) => state.filter.sort;
+
+export const { setCategoryId, setSort, setCurrentPage, setFilters, setSearchValue } = filterSlice.actions;
+
+в Sort.jsx 
+import { selectSort, setSort } from '../redux/slices/filterSlice';
+
+було
+  // const sort = useSelector(state => state.filter.sort);
+стало
+const sort = useSelector(selectSort);
+
+в cartSlice.js
+
+export const selectCart = (state) => state.cart;
+export const selectCartItemById = (id) => (state) => state.cart.items.find((obj) => obj.id == id);
+
+в PizzaBlock
+
+  // const cartItem = useSelector((state) => state.cart.items.find((obj) => obj.id == id))
+  const cartItem = useSelector(selectCartItemById(id))
+
+
+
+в App.js убрали контєкст
+
+
+в Search 
+import { setSearchValue } from '../../redux/slices/filterSlice';
+
+убрали // const { setSearchValue } = React.useContext(SearchContext)
+
+    const dispatch = useDispatch();
+
+    const updateSearchValue = React.useCallback(
+        debounce((str) => {
+            // setSearchValue(str);
+            dispatch(setSearchValue(str))
+        }, 1000),
+        [],
+    )
+
+    const onClickClear = () => {
+        // setSearchValue('');
+        dispatch(setSearchValue(''));
+        setValue('');
+        inputRef.current.focus();
+    }
+
+
+в Home
+контєкст убрали // const { searchValue } = React.useContext(SearchContext)
+  const { categoryId, sort, currentPage, searchValue } = useSelector(selectFilter);

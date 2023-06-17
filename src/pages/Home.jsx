@@ -1,7 +1,7 @@
 import React from 'react'
 // import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux'
-import { setCategoryId, setCurrentPage, setFilters } from '../redux/slices/filterSlice';
+import { selectFilter, setCategoryId, setCurrentPage, setFilters } from '../redux/slices/filterSlice';
 import Categories from "../components/Categories";
 import Sort, { list } from "../components/Sort";
 import PizzaBlock from "../components/PizzaBlock";
@@ -11,7 +11,7 @@ import { SearchContext } from '../App';
 // import pizzas from './assets/pizzas.json'
 import qs from 'qs';
 import { useNavigate } from 'react-router-dom';
-import { fetchPizzas } from '../redux/slices/pizzaSlice';
+import { fetchPizzas, selectPizzaData } from '../redux/slices/pizzaSlice';
 
 
 
@@ -20,15 +20,17 @@ const Home = () => {
   const dispatch = useDispatch();
   const isSearch = React.useRef(false);
   const isMounted = React.useRef(false);
-  const { items, status } = useSelector((state) => state.pizza)
+  // const { items, status } = useSelector((state) => state.pizza)
+  const { items, status } = useSelector(selectPizzaData)
 
-  const { categoryId, sort, currentPage } = useSelector((state) => state.filter);
+  // const { categoryId, sort, currentPage } = useSelector((state) => state.filter);
+  const { categoryId, sort, currentPage, searchValue } = useSelector(selectFilter);
 
 
   // const categoryId = useSelector(state => state.filter.categoryId);
   // const sortType = useSelector(state => state.filter.sort.sortProperty);
 
-  const { searchValue } = React.useContext(SearchContext)
+  // const { searchValue } = React.useContext(SearchContext)
   // const [items, setItems] = React.useState([]);
   // const [isLoading, setIsLoading] = React.useState(true)
 
