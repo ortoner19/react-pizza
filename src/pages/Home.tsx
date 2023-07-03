@@ -7,7 +7,6 @@ import Sort, { list } from "../components/Sort";
 import PizzaBlock from "../components/PizzaBlock";
 import Skeleton from "../components/PizzaBlock/Skeleton";
 import Pagination from '../components/Pagination';
-import { SearchContext } from '../App';
 // import pizzas from './assets/pizzas.json'
 import qs from 'qs';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,7 +14,7 @@ import { fetchPizzas, selectPizzaData } from '../redux/slices/pizzaSlice';
 
 
 
-const Home = () => {
+const Home: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const isSearch = React.useRef(false);
@@ -41,13 +40,13 @@ const Home = () => {
   //   sortProperty: 'rating',
   // });
 
-  const onChangeCategory = (id) => {
+  const onChangeCategory = (idx: number) => {
     // console.log(id); // номер катєгорії получаю
-    dispatch(setCategoryId(id))
+    dispatch(setCategoryId(idx))
   }
 
-  const onChangePage = number => {
-    dispatch(setCurrentPage(number))
+  const onChangePage = (page: number) => {
+    dispatch(setCurrentPage(page))
   }
 
   const getPizzas = async () => {
@@ -67,7 +66,9 @@ const Home = () => {
     // try {
     // const {data} = await axios.get(`https://63f1fde1aab7d09125ff6f7c.mockapi.io/items?page=${currentPage}&limit=4&${category}&sortBy=${sortBy}&order=${order}${search}`);
     // // setItems(res.data); // установили піци і ниже отключіли скєлєтон
-    dispatch(fetchPizzas({
+    dispatch(
+          // @ts-ignore
+      fetchPizzas({
       sortBy,
       order,
       category,
@@ -140,7 +141,7 @@ const Home = () => {
     //   }
     //   return false
     // })
-    .map((obj) => <PizzaBlock key={obj.id} {...obj} />); // рендер піцц
+    .map((obj: any) => <PizzaBlock key={obj.id} {...obj} />); // рендер піцц
     // .map((obj) =><Link key={obj.id}  to={`/pizza/${obj.id}`}> <PizzaBlock {...obj} /> </Link>); // рендер піцц
   const skeletons = [...new Array(6)].map((_, index) => <Skeleton key={index} />);
 

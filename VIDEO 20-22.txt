@@ -1,0 +1,199 @@
+npm install --save typescript @types/node @types/react @types/react-dom @types/jest добавляєм тайпскріпт до проекта з рєактом уже, або гуглим cra typesctipt
+
+Якщо у файлі є jsx розмітка рєактовська, то ts не можна, треба обязатєльно tsx
+
+
+Щоб не було помилок, добавили файл tsconfig.json
+
+
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "src/@types"]
+}
+
+
+index.js було
+const root = ReactDOM.createRoot(document.getElementById("root"));
+стало в index.tsx
+
+const rootElem = document.getElementById('root');
+
+if (rootElem) {
+
+  const root = ReactDOM.createRoot(rootElem);
+
+  root.render(
+    <BrowserRouter>
+      <Provider store={store}>
+        <App />
+      </Provider>
+    </BrowserRouter>
+  );
+}
+
+в файлі FullPizza.tsx
+
+const FullPizza: React.FC = () => {   // React.FC - це функциональний компонєнт
+    // const [pizza, setPizza] = React.useState(); було
+    const [pizza, setPizza] = React.useState<{
+        imageUrl: string;
+        title: string;
+        price: number;
+    }>();
+
+if (!pizza) {
+        // return ('Загрузка...') було
+        return <>Загрузка...</>
+    }
+
+    return (
+        <div className='container'>
+            <img src={pizza.imageUrl} alt="" />
+            <h2>{pizza.title}</h2>
+            <h4>{pizza.price} ₽</h4>
+        </div>
+    )
+}
+
+=====
+Тіпізірували усі файли.
+
+
+const CartEmpty: React.FC = () => { ... // React.FC це функциональний компонєнт, кругом таке зробили. Де писалось черен function зробили через const кругом.
+
+Були помилкі з png і svg тіпами. Шоб пофіксить создали окремий файл assets.d.ts і там описали їх тіпа глобально:
+
+declare module "*.svg" {
+    const content: any;
+    export default content;
+}
+declare module "*.png" {
+    const content: any;
+    export default content;
+}
+declare module "*.scss" {
+    const content: any;
+    export default content;
+}
+
+
+в Header.tsx
+
+  const totalCount = items.reduce((sum: number, item: any) => sum + item.count, 0);
+
+
+в Sort.tsx
+
+type SortItem = {
+  name: string;
+  sortProperty: string;
+};
+
+export const list: SortItem[] = [
+  {name: 'популярности (DESC)', sortProperty: 'rating'}, 
+  {name: 'популярности (ASC)', sortProperty: '-rating'}, 
+  {name: 'цене (DESC)', sortProperty: 'price'}, 
+  {name: 'цене (ASC)', sortProperty: '-price'}, 
+  {name: 'алфавиту (DESC)', sortProperty: 'title'},
+  {name: 'алфавиту (ASC)', sortProperty: '-title'}
+];
+
+const sortRef = React.useRef<HTMLDivElement>(null);
+
+  const onClickListItem = (obj: SortItem) => {
+    // onChangeSort(i);  // вибрать пункт
+    dispatch(setSort(obj));
+    setOpen(false); // скрийся
+  }
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: any) => {
+      if(!sortRef?.current) return;
+        if(!sortRef.current.contains(event.target)) {
+          setOpen(false)
+        }
+    }
+    document.body.addEventListener('click', handleClickOutside);
+
+    return () => document.body.removeEventListener('click', handleClickOutside);  // якщо на другу сторінку перейшли, то обработчік собитій удаляєм
+
+  }, [])
+
+
+в Categories
+
+type CategoriesProps = {
+  value: number;
+  onChangeCategory: any;
+}
+
+const Categories: React.FC<CategoriesProps> = ({value, onChangeCategory}) => { ...
+
+
+в CartItem
+
+було // const CartItem = ({ id, title, price, size, type, count, imageUrl }) => {
+тепер
+
+type CartItemProps = { id: string, title: string, price: number, size: number, type: string, count: number, imageUrl: string };
+
+const CartItem: React.FC<CartItemProps> = ({ id, title, price, size, type, count, imageUrl }) => {...
+
+
+в Pagination
+
+
+type PaginationProps = {
+  currentPage: number;
+  onChangePage: any;
+}
+
+ const Pagination: React.FC<PaginationProps> = ({ currentPage, onChangePage }) => {
+
+
+в PizzaBlock
+
+
+type PizzaBlockProps = {id: string, title: string, price: number, imageUrl: string, sizes: number[], types: number[]}
+
+const PizzaBlock: React.FC<PizzaBlockProps> = ({ id, title, price, imageUrl, sizes, types }) => {
+
+
+=======
+в Search нада було тіпізірувать бібліотєку debounce
+
+npm i  @types/lodash.debounce
+
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    const onClickClear = () => {
+        // setSearchValue('');
+        dispatch(setSearchValue(''));
+        setValue('');
+        // inputRef.current.focus();
+        // if (inputRef.current) {
+        //     inputRef.current.focus();
+        // } або ниже так
+        inputRef.current?.focus();
+    }
+
+    const onChangeInput = (event: any) => {
+        setValue(event.target.value)
+        updateSearchValue(event.target.value);
+    }

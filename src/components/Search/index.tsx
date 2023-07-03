@@ -5,16 +5,16 @@ import styles from './search.module.scss'
 // import { SearchContext } from '../../App'
 import { useDispatch } from 'react-redux';
 
-const Search = () => {
+const Search: React.FC = () => {
 
     const [value, setValue] = React.useState(''); 
 
     const dispatch = useDispatch();
     // const { setSearchValue } = React.useContext(SearchContext)
-    const inputRef = React.useRef();
+    const inputRef = React.useRef<HTMLInputElement>(null);
 
     const updateSearchValue = React.useCallback(
-        debounce((str) => {
+        debounce((str: string) => {
             // setSearchValue(str);
             dispatch(setSearchValue(str))
         }, 1000),
@@ -25,10 +25,14 @@ const Search = () => {
         // setSearchValue('');
         dispatch(setSearchValue(''));
         setValue('');
-        inputRef.current.focus();
+        // inputRef.current.focus();
+        // if (inputRef.current) {
+        //     inputRef.current.focus();
+        // } або ниже так
+        inputRef.current?.focus();
     }
 
-    const onChangeInput = event => {
+    const onChangeInput = (event: any) => {
         setValue(event.target.value)
         updateSearchValue(event.target.value);
     }
