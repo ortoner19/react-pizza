@@ -197,3 +197,26 @@ npm i  @types/lodash.debounce
         setValue(event.target.value)
         updateSearchValue(event.target.value);
     }
+
+в Home
+
+  const onChangeCategory = (idx: number) => {
+    // console.log(id); // номер катєгорії получаю
+    dispatch(setCategoryId(idx))
+  }
+
+  const onChangePage = (page: number) => {
+    dispatch(setCurrentPage(page))
+  }
+
+
+
+===
+Якщо треба откл тіпізацию
+
+// @ts-ignore
+
+
+=========
+
+commit 4cd1a8221bce481f6e3ed2200335fe9f9572d7ce 22 урок

@@ -7,6 +7,7 @@ type SortItem = {
   sortProperty: string;
 };
 
+
 export const list: SortItem[] = [
   {name: 'популярности (DESC)', sortProperty: 'rating'}, 
   {name: 'популярности (ASC)', sortProperty: '-rating'}, 
