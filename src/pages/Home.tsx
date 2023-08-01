@@ -1,7 +1,7 @@
 import React from 'react'
 // import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux'
-import { selectFilter, setCategoryId, setCurrentPage, setFilters } from '../redux/slices/filterSlice';
+import { FilterSliceState, selectFilter, setCategoryId, setCurrentPage, setFilters } from '../redux/slices/filterSlice';
 import Categories from "../components/Categories";
 import Sort, { list } from "../components/Sort";
 import PizzaBlock from "../components/PizzaBlock";
@@ -10,13 +10,14 @@ import Pagination from '../components/Pagination';
 // import pizzas from './assets/pizzas.json'
 import qs from 'qs';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchPizzas, selectPizzaData } from '../redux/slices/pizzaSlice';
+import { SearchPizzaParams, fetchPizzas, selectPizzaData } from '../redux/slices/pizzaSlice';
+import { useAppDispatch } from '../redux/store';
 
 
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const isSearch = React.useRef(false);
   const isMounted = React.useRef(false);
   // const { items, status } = useSelector((state) => state.pizza)
@@ -73,7 +74,7 @@ const Home: React.FC = () => {
       order,
       category,
       search,
-      currentPage,
+      currentPage: String(currentPage),
     }),
     );
     // } catch (error) {
@@ -98,6 +99,10 @@ const Home: React.FC = () => {
       navigate(`?${queryString}`)
       // console.log(queryString); // вернуло sortProperty=rating&categoryId=0&currentPage=1
     }
+    if(!window.location.search) {  //! три строкі  добавив, їх не було
+      dispatch(fetchPizzas({} as SearchPizzaParams));
+    }
+
     isMounted.current = true;
   }, [categoryId, sort.sortProperty, currentPage])
 
@@ -105,10 +110,10 @@ const Home: React.FC = () => {
   //Если был первый рендер, то проверяем URL-параметры и сохраняемся редуксе
   React.useEffect(() => {
     if (window.location.search) {
-      const params = qs.parse(window.location.search.substring(1));
+      const params = (qs.parse(window.location.search.substring(1)) as unknown) as SearchPizzaParams;
       // console.log(params);
 
-      const sort = list.find(obj => obj.sortProperty == params.sortProperty)
+      const sort = list.find(obj => obj.sortProperty == params.sortProperty)  //! по відосу в кінці на sortBy замінили
 
       dispatch(
         setFilters({
